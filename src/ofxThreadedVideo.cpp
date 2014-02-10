@@ -30,7 +30,7 @@
  */
 
 #include "ofxThreadedVideo.h"
-
+#include <assert.h> 
 //--------------------------------------------------------------
 void ofxThreadedVideo::flush(){
     lock();
@@ -258,19 +258,6 @@ void ofxThreadedVideo::update(){
                 bPopCommand = true;
             }
             
-            if(c.getCommand() == "setFrame"){
-                if(bVerbose) ofLogVerbose() << instanceID << " = " << c.getCommandAsString();
-                lock();
-                int frameTarget = c.getArgument<int>(0);
-                bForceFrameNew = true;
-                frameTarget = CLAMP(frameTarget, 0, frameTotal);
-                //cout << "setframe A: " << frameTarget << " " << videoID << " " << bCriticalSection << endl;
-                video[videoID].setFrame(frameTarget);
-                //cout << "setframe B: " << frameTarget << " " << videoID << " " << bCriticalSection << endl;
-                unlock();
-                bPopCommand = true;
-            }
-            
         }
         
         lock();
@@ -366,30 +353,22 @@ void ofxThreadedVideo::threadedFunction(){
 //                    bPopCommand = true;
 //                }
                 
-//                if(c.getCommand() == "setFrame"){
-//                    if(bVerbose) ofLogVerbose() << instanceID << " = " << c.getCommandAsString();
-//                    int frameTarget = c.getArgument<int>(0);
-//                    CLAMP(frameTarget, 0, frameTotal);
-//                    video[videoID].setFrame(frameTarget);
-//                    bForceFrameNew = true;
-//                    bPopCommand = true;
-//                }
+				if (c.getCommand() == "setFrame"){
+					if (bVerbose) ofLogVerbose() << instanceID << " = " << c.getCommandAsString();
+					lock();
+					int frameTarget = c.getArgument<int>(0);
+					bForceFrameNew = true;
+					frameTarget = CLAMP(frameTarget, 0, frameTotal);
+					                //cout << "setframe A: " << frameTarget << " " << videoID << " " << bCriticalSection << endl;
+						video[videoID].setFrame(frameTarget);
+					                //cout << "setframe B: " << frameTarget << " " << videoID << " " << bCriticalSection << endl;
+						unlock();
+					bPopCommand = true;
+					
+				}
                 
-//                if(c.getCommand() == "setFrame"){
-//                    if(bVerbose) ofLogVerbose() << instanceID << " = " << c.getCommandAsString();
-//                    lock();
-//                    int frameTarget = c.getArgument<int>(0);
-//                    bForceFrameNew = true;
-//                    frameTarget = CLAMP(frameTarget, 0, frameTotal);
-//                    cout << "setframe A: " << frameTarget << " " << videoID << " " << bCriticalSection << endl;
-//                    video[videoID].setFrame(frameTarget);
-//                    cout << "setframe B: " << frameTarget << " " << videoID << " " << bCriticalSection << endl;
-//                    unlock();
-//                    bPopCommand = true;
-//                }
-                
-                if(c.getCommand() == "setPaused"){
-                    if(bVerbose) ofLogVerbose() << instanceID << " = " << c.getCommandAsString();
+				if (c.getCommand() == "setPaused"){
+					if (bVerbose) ofLogVerbose() << instanceID << " = " << c.getCommandAsString();
                     lock();
                     bIsPaused = c.getArgument<bool>(0);
                     unlock();
@@ -619,6 +598,7 @@ bool ofxThreadedVideo::loadMovie(string path){
     ofxThreadedVideoCommand c("loadMovie", instanceID);
     c.setArgument(path);
     pushCommand(c);
+	return true;
 }
 
 //--------------------------------------------------------------
@@ -640,7 +620,6 @@ void ofxThreadedVideo::close(){
 
 //--------------------------------------------------------------
 void ofxThreadedVideo::closeMovie(){
-    //waitForThread(); ?
     lock();
     ofxThreadedVideoGlobalMutex.lock();
     
@@ -1088,3 +1067,8 @@ string ofxThreadedVideo::getEventTypeAsString(ofxThreadedVideoEventType eventTyp
             break;
     }
 }
+ofxThreadedVideoEvent::ofxThreadedVideoEvent(string _path, ofxThreadedVideoEventType _eventType, ofxThreadedVideo * _video)
+    : path(_path), eventType(_eventType), video(_video)
+{
+	eventTypeAsString = _video->getEventTypeAsString(_eventType);
+};
